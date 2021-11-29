@@ -21,6 +21,7 @@ header:
   paths-ignore:
     - ".github/"
     - "README.md"
+    - "LICENSE"
     - ".*"
 
   comment: on-failure
