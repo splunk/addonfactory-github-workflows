@@ -9,9 +9,6 @@ on:
       GITHUB_TOKEN:
         description: Github token
         required: true
-      PERSONAL_ACCESS_TOKEN:
-        description: Personal access token
-        required: true
       SEMGREP_PUBLISH_TOKEN:
         description: semgrep token
         required: true
