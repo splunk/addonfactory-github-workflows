@@ -53,6 +53,9 @@ jobs:
         with:
           submodules: false
           persist-credentials: false
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
       - name: Semantic Release
         id: version
         uses: cycjimmy/semantic-release-action@v2.6.0
@@ -146,6 +149,7 @@ jobs:
           PYTHON_ISORT_CONFIG_FILE: pyproject.toml
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FILTER_REGEX_EXCLUDE: README.md
+          VALIDATE_GITHUB_ACTIONS: false
   review_secrets:
     name: security-detect-secrets
     runs-on: ubuntu-latest
@@ -406,8 +410,8 @@ jobs:
     name: quality-appinspect-${{ matrix.tags }}
     needs: build
     runs-on: ubuntu-latest
-    continue-on-error: true
     strategy:
+      fail-fast: false
       matrix:
         tags:
           - "cloud"
@@ -515,7 +519,6 @@ jobs:
         id: artifactid
         run: |
           echo "::set-output name=result:: ${{ needs.meta.outputs.sc4s }}"
-
   setup:
     needs:
       - build
@@ -551,7 +554,6 @@ jobs:
           echo "::set-output name=argo-base-href::\'\'"
           echo "::set-output name=argo-namespace::workflows"
           echo "::set-output name=argo-workflow-tmpl-name::ta-workflow"
-
           ADDON_NAME=$(crudini --get package/default/app.conf id name | tr '[:lower:]' '[:upper:]')
           if [[ -n $(echo "${ADDON_NAME}" | awk -F 'SPLUNK_TA_' '{print $2}') ]];
           then
@@ -561,14 +563,11 @@ jobs:
               ADDON_NAME=$(echo "${ADDON_NAME}" | awk -F '_FOR_SPLUNK' '{print $1}')
           fi
           echo "::set-output name=addon-name::\"$ADDON_NAME\""
-
           JOB_NAME=$(echo "$ADDON_NAME" | tail -c 16)-$(echo "${GITHUB_SHA}" | tail -c 8)-TEST-TYPE-${GITHUB_RUN_ID}
           JOB_NAME=${JOB_NAME//[_.]/-}
           echo "::set-output name=job-name::wf-$JOB_NAME"
-
           LABELS="addon-name=${ADDON_NAME}"
           echo "::set-output name=labels::$LABELS"
-
           ADDON_UPLOAD_PATH="s3://ta-production-artifacts/ta-apps/${{ needs.build.outputs.buildname }}"
           echo "::set-output name=addon-upload-path::$ADDON_UPLOAD_PATH"
           echo "::set-output name=directory-path::/tmp"
@@ -1206,7 +1205,7 @@ jobs:
           path: "${{ needs.setup.outputs.directory-path }}/test-results/*.xml"
           reporter: java-junit
 
-  publish:
+  pre-publish:
     if: always()
     needs:
       - meta
@@ -1226,12 +1225,12 @@ jobs:
       - run-knowledge-tests
       - run-modinput-tests
       - run-ui-tests
+      - run-requirement-tests
     runs-on: ubuntu-latest
     env:
       NEEDS: ${{ toJson(needs) }}
     steps:
       - name: check if tests have passed or skipped
-        if: github.event_name != 'pull_request'
         id: check
         shell: bash
         run: |
@@ -1243,18 +1242,26 @@ jobs:
               echo "::set-output name=run-publish::false"
           fi
       - name: exit without publish
-        if: ${{ steps.check.outputs.run-publish == 'false' || github.event_name == 'pull_request'}}
+        if: ${{ steps.check.outputs.run-publish == 'false' }}
         run: |
           echo " some test job failed. "
           exit 1
+  publish:
+    if: always() && needs.pre-publish.result == 'success' && github.event_name != 'pull_request'
+    needs:
+      - pre-publish
+    runs-on: ubuntu-latest
+    steps:
       - name: Checkout
         uses: actions/checkout@v2
         with:
           submodules: false
           persist-credentials: false
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
       - name: Semantic Release
         id: semantic
-        if: ${{ steps.check.outputs.run-publish == 'true' }}
         uses: cycjimmy/semantic-release-action@v2.6.0
         with:
           semantic_version: 17
@@ -1312,7 +1319,7 @@ jobs:
 
   update-semver:
     name: release-set-git-tags
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: always() && needs.publish.result == 'success' && startsWith(github.ref, 'refs/tags/v')
     needs:
       - publish
     runs-on: ubuntu-latest
