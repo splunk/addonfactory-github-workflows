@@ -10,28 +10,28 @@ on:
         description: Github token
         required: true
       SEMGREP_PUBLISH_TOKEN:
-        description: semgrep token
+        description: Semgrep token
         required: true
       SNYK_TOKEN:
-        description: snyk token
+        description: Snyk token
         required: true
       AWS_ACCESS_KEY_ID:
-        description: AWS access key
+        description: AWS access key id
         required: true
       AWS_DEFAULT_REGION:
         description: AWS default region
         required: true
       AWS_SECRET_ACCESS_KEY:
-        description: AWS secret key
+        description: AWS secret access key
         required: true
       VT_API_KEY:
-        description: vt api key
+        description: Virustotal api key
         required: true
       CODECOV_TOKEN:
-        description: codecov token
+        description: Codecov token
         required: true
       OTHER_TA_REQUIRED_CONFIGS:
-        description: additional configs
+        description: other required configs
         required: true
 
 jobs:
