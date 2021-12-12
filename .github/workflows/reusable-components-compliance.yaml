@@ -1,0 +1,33 @@
+name: "Compliance"
+
+on:
+  workflow_call:
+
+jobs:
+  compliance-dependencies:
+    name: Compliance Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: splunk/addonfactory-ort-action@v1
+        id: ort-action
+        with:
+          UsePython3: "3.7"
+      - uses: actions/upload-artifact@v2
+        with:
+          name: analysis-reports
+          path: |
+            .ort/reports/*
+        if: always()
+      - uses: actions/upload-artifact@v2
+        with:
+          name: analysis-analyzer
+          path: |
+            .ort/analyzer/*
+        if: always()
+  compliance-copyrights:
+    name: Compliance Copyright Headers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: apache/skywalking-eyes@main
