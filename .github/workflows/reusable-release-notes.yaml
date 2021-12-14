@@ -3,7 +3,7 @@ name: Release-Notes-Preview
 on:
   workflow_call:
     secrets:
-      GITHUB_TOKEN:
+      GH_TOKEN:
         description: Github token
         required: true
 
@@ -19,4 +19,4 @@ jobs:
           releaseBranch: main
         env:
           GITHUB_PR_USERNAME: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
