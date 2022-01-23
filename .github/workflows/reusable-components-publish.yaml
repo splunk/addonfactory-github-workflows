@@ -1,0 +1,66 @@
+name: "Publish"
+
+on:
+  workflow_call:
+    secrets:
+      GITHUB_TOKEN:
+        description: Github token
+        required: true
+      PYPI_USERNAME:
+        description: PyPI username
+        required: true
+      PYPI_TOKEN:
+        description: PyPI token
+        required: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: false
+          # Very important: semantic-release won't trigger a tagged
+          # build if this is not set false
+          persist-credentials: false
+      - uses: actions/setup-node@v2
+        with:
+          node-version: "14"
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.7"
+      - name: Install Poetry
+        run: curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3 -
+      - name: Install and Build
+        run: |
+          # shellcheck disable=SC1090
+          source "$HOME/.poetry/env"
+          poetry install
+          poetry build
+      - uses: actions/download-artifact@v2
+        with:
+          name: analysis-reports
+          path: /tmp/analysis-reports
+      - name: Update Notices
+        run: cp -f /tmp/analysis-reports/NOTICE_summary NOTICE
+      - name: Semantic Release
+        uses: cycjimmy/semantic-release-action@v2
+        with:
+          semantic_version: 17
+          extra_plugins: |
+            @semantic-release/exec
+            @semantic-release/git
+            @google/semantic-release-replace-plugin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PYPI_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+  update-semver:
+    name: Move Respository semver tags
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: haya14busa/action-update-semver@v1
