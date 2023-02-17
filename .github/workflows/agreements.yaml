@@ -20,7 +20,7 @@ jobs:
           path-to-signatures: "signatures/version1/cla.json"
           path-to-document: "https://github.com/splunk/cla-agreement/blob/main/CLA.md" # e.g. a CLA or a DCO document
           branch: "main"
-          allowlist: dependabot[bot]
+          allowlist: dependabot[bot],renovate[bot]
           remote-organization-name: splunk
           remote-repository-name: cla-agreement
   CodeOfConduct:
@@ -36,7 +36,7 @@ jobs:
           path-to-signatures: "signatures/version1/coc.json"
           path-to-document: "https://github.com/splunk/cla-agreement/blob/main/CODE_OF_CONDUCT.md" # e.g. a COC or a DCO document
           branch: "main"
-          allowlist: dependabot[bot]
+          allowlist: dependabot[bot],renovate[bot]
           remote-organization-name: splunk
           remote-repository-name: cla-agreement
           custom-pr-sign-comment: "I have read the Code of Conduct and I hereby accept the Terms"
