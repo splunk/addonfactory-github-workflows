@@ -6,7 +6,9 @@ on:
       GH_TOKEN:
         description: Github token
         required: true
-
+permissions:
+  contents: read
+  packages: read
 jobs:
   preview:
     runs-on: ubuntu-latest
