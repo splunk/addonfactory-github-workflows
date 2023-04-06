@@ -10,10 +10,10 @@ on:
         description: Personal access token
         required: true
 permissions:
-  actions: write
-  contents: write
-  pull-requests: write
-  statuses: write
+  actions: read
+  contents: read
+  pull-requests: read
+  statuses: read
 jobs:
   ContributorLicenseAgreement:
     runs-on: ubuntu-latest
