@@ -12,7 +12,7 @@ on:
 permissions:
   actions: read
   contents: read
-  pull-requests: read
+  pull-requests: write
   statuses: read
 jobs:
   ContributorLicenseAgreement:
