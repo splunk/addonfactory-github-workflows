@@ -23,6 +23,11 @@ jobs:
           allowlist: dependabot[bot],renovate[bot]
           remote-organization-name: splunk
           remote-repository-name: cla-agreement
+          custom-pr-sign-comment: "I have read the CLA Document and I hereby accept the CLA"
+          create-file-commit-message: "For example: Creating file for storing CLA Signatures"
+          signed-commit-message: "$contributorName has signed the CLA in #$pullRequestNo"
+          custom-notsigned-prcomment: "All contributors have NOT signed the CLA Document"
+          custom-allsigned-prcomment: "****CLA Assistant Lite bot**** All contributors have signed the CLA  ✍️ ✅"
   CodeOfConduct:
     runs-on: ubuntu-latest
     steps:
