@@ -31,6 +31,9 @@ permissions:
 jobs:
   ContributorLicenseAgreement:
     runs-on: ubuntu-latest
+    # `secrets` context is not allowed in step `if:` conditions; bridge via env.
+    env:
+      HAS_APP_CREDS: ${{ (secrets.GH_APP_CLIENT_ID != '' && secrets.GH_APP_PRIVATE_KEY != '') && 'true' || 'false' }}
     steps:
       # NOTE: the App token MUST be minted in the same job that consumes it.
       # GitHub Actions strips secret-classified values from `jobs.<id>.outputs`
@@ -38,7 +41,7 @@ jobs:
       # a separate job and passing via `needs.*.outputs.token` does not work.
       - name: Generate GitHub App installation token
         id: app-token
-        if: ${{ secrets.GH_APP_CLIENT_ID != '' && secrets.GH_APP_PRIVATE_KEY != '' }}
+        if: env.HAS_APP_CREDS == 'true'
         uses: actions/create-github-app-token@v3
         with:
           client-id: ${{ secrets.GH_APP_CLIENT_ID }}
@@ -65,10 +68,12 @@ jobs:
           custom-allsigned-prcomment: "****CLA Assistant Lite bot**** All contributors have signed the CLA  ✍️ ✅"
   CodeOfConduct:
     runs-on: ubuntu-latest
+    env:
+      HAS_APP_CREDS: ${{ (secrets.GH_APP_CLIENT_ID != '' && secrets.GH_APP_PRIVATE_KEY != '') && 'true' || 'false' }}
     steps:
       - name: Generate GitHub App installation token
         id: app-token
-        if: ${{ secrets.GH_APP_CLIENT_ID != '' && secrets.GH_APP_PRIVATE_KEY != '' }}
+        if: env.HAS_APP_CREDS == 'true'
         uses: actions/create-github-app-token@v3
         with:
           client-id: ${{ secrets.GH_APP_CLIENT_ID }}
@@ -76,7 +81,7 @@ jobs:
           owner: splunk
           repositories: cla-agreement
       - name: "COC Assistant"
-        if: (github.event.comment.body == 'recheck' || github.event.comment.body == 'I have read the Code of Conduct and I hereby accept the Terms') || github.event_name == 'pull_request_target'
+        if: (github.event.comment.body == 'recheck' || github.event.comment.body == 'I have read the Code of Conduct and I hereby accept the Terms')  || github.event_name == 'pull_request_target'
         uses: contributor-assistant/github-action@v2.6.1
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN || github.token }}
