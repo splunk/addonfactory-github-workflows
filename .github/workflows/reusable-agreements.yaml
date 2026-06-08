@@ -4,26 +4,53 @@ on:
   workflow_call:
     secrets:
       GH_TOKEN:
-        description: Github token
-        required: true
+        description: "GITHUB_TOKEN of the calling workflow. Optional; defaults to github.token."
+        required: false
       PERSONAL_ACCESS_TOKEN:
-        description: Personal access token
-        required: true
+        description: |
+          Legacy PAT with write access to the remote signatures repository
+          (splunk/cla-agreement). Prefer GH_APP_CLIENT_ID/GH_APP_PRIVATE_KEY
+          which mint a short-lived GitHub App installation token in-job.
+        required: false
+      GH_APP_CLIENT_ID:
+        description: |
+          GitHub App client id. When provided together with GH_APP_PRIVATE_KEY,
+          an installation token scoped to splunk/cla-agreement is generated
+          in-job and used in place of PERSONAL_ACCESS_TOKEN.
+        required: false
+      GH_APP_PRIVATE_KEY:
+        description: "GitHub App private key (PEM)."
+        required: false
+
 permissions:
   actions: read
   contents: read
   pull-requests: write
   statuses: read
+
 jobs:
   ContributorLicenseAgreement:
     runs-on: ubuntu-latest
     steps:
+      # NOTE: the App token MUST be minted in the same job that consumes it.
+      # GitHub Actions strips secret-classified values from `jobs.<id>.outputs`
+      # ("Skip output 'token' since it may contain secret"), so minting it in
+      # a separate job and passing via `needs.*.outputs.token` does not work.
+      - name: Generate GitHub App installation token
+        id: app-token
+        if: ${{ secrets.GH_APP_CLIENT_ID != '' && secrets.GH_APP_PRIVATE_KEY != '' }}
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ secrets.GH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          owner: splunk
+          repositories: cla-agreement
       - name: "CLA Assistant"
         if: (github.event.comment.body == 'recheck' || github.event.comment.body == 'I have read the CLA Document and I hereby accept the CLA') || github.event_name == 'pull_request_target'
         uses: contributor-assistant/github-action@v2.6.1
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN || github.token }}
+          PERSONAL_ACCESS_TOKEN: ${{ steps.app-token.outputs.token || secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           path-to-signatures: "signatures/version1/cla.json"
           path-to-document: "https://github.com/splunk/cla-agreement/blob/main/CLA.md" # e.g. a CLA or a DCO document
@@ -39,12 +66,21 @@ jobs:
   CodeOfConduct:
     runs-on: ubuntu-latest
     steps:
+      - name: Generate GitHub App installation token
+        id: app-token
+        if: ${{ secrets.GH_APP_CLIENT_ID != '' && secrets.GH_APP_PRIVATE_KEY != '' }}
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ secrets.GH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          owner: splunk
+          repositories: cla-agreement
       - name: "COC Assistant"
         if: (github.event.comment.body == 'recheck' || github.event.comment.body == 'I have read the Code of Conduct and I hereby accept the Terms') || github.event_name == 'pull_request_target'
         uses: contributor-assistant/github-action@v2.6.1
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN || github.token }}
+          PERSONAL_ACCESS_TOKEN: ${{ steps.app-token.outputs.token || secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           path-to-signatures: "signatures/version1/coc.json"
           path-to-document: "https://github.com/splunk/cla-agreement/blob/main/CODE_OF_CONDUCT.md" # e.g. a COC or a DCO document
